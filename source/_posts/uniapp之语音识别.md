@@ -15,9 +15,8 @@ feature: true
 <p>在hbuilder中引入百度语音识别集成平台，实现&nbsp;&nbsp<span style="background:#e1c953; color:#000;padding:5px 5px">AI语音识别</span>&nbsp;&nbsp;</p>
 
 <div style="display: flex;justify-content: center;">
-    <img src='https://chlblog.oss-cn-guangzhou.aliyuncs.com/yuyinshibie1.jpg?Expires=1719138259&OSSAccessKeyId=TMP.3KkWxBhPT2PLwHUkAck2fqXke4mp3QgWaU8DAsKgo4VJto5WGVpbs5jgnM7LhbfoU5TThVrtXwfwk2dhSoAB31ufMi9c8R&Signature=ow5iLjLMloHo1EOuBl0iicX0uZw%3D' style="width: 200px" />
+    <img src='https://chlblog.oss-cn-guangzhou.aliyuncs.com/yuyinshibie1.jpg' style="width: 200px" />
 </div>
-<!-- ![](成效图.jpg) -->
 
 ### 操作方式
 
@@ -25,7 +24,7 @@ feature: true
 
 <p>&nbsp;&nbsp<span style="background:#e1c953; color:#000;padding:5px 5px">manifest.json</span>&nbsp;&nbsp;文件</p>
 
-<div><img src='https://chlblog.oss-cn-guangzhou.aliyuncs.com/yuyinshibie1.jpg?Expires=1719138259&OSSAccessKeyId=TMP.3KkWxBhPT2PLwHUkAck2fqXke4mp3QgWaU8DAsKgo4VJto5WGVpbs5jgnM7LhbfoU5TThVrtXwfwk2dhSoAB31ufMi9c8R&Signature=ow5iLjLMloHo1EOuBl0iicX0uZw%3D' style="width: 200px" /></dix>
+<div><img src='https://chlblog.oss-cn-guangzhou.aliyuncs.com/yuyinshibie2.png' style="width: 200px" /></dix>
 
 #### 百度 AI 平台获取 key 值
 
