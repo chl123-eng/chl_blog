@@ -32,12 +32,62 @@ categories:
 </div>
 
 
-#### 实现数据响应式
+### 实现数据响应式
 
 <div style="background-color: #fff5f5;color:#666;padding: 10px 20px; line-height: 40px">
 任何类型的Watcher都是基于数据响应式的，也就是说，要想实现Watcher，就需要先实现数据响应式，而数据响应式的原理就是通过Object.defineProperty去劫持变量的get和set属性。
 <a href="Vue.2.6源码分析之响应式数据原理">请移步[Vue.2.6源码分析之响应式数据原理]</a>。
 </div>
+
+#### 什么是Dep？
+```
+// 例子代码，与本章代码无关
+
+<div>{{name}}</div>
+
+data() {
+        return {
+            name: '林三心'
+        }
+    },
+    computed: {
+        info () {
+            return this.name
+        }
+    },
+    watch: {
+        name(newVal) {
+            console.log(newVal)
+        }
+    }
+
+```
+这里name变量被三个地方所依赖，三个地方代表了三种Watcher，那么name会直接自己管这三个Watcher吗？答案是不会的，name会实例一个Dep，来帮自己管这几个Wacther，类似于管家，当name更改的时候，会通知dep，而dep则会带着主人的命令去通知这些Wacther去完成自己该做的事
+
+![](https://chlblog.oss-cn-guangzhou.aliyuncs.com/watcher1.png)
+
+#### Watcher为何也要反过来收集Dep？
+
+上面说到了，dep是name的管家，他的职责是：name更新时，dep会带着主人的命令去通知subs里的Watcher去做该做的事，那么，dep收集Watcher很合理。那为什么watcher也需要反过来收集dep呢？这是因为computed属性里的变量没有自己的dep，也就是他没有自己的管家，看以下例子：
+
+<div style="background-color: #fff5f5;color:#666;padding: 10px 20px; line-height: 40px">
+这里先说一个知识点：如果html里不依赖name这个变量，那么无论name再怎么变，他都不会主动去刷新视图，因为html没引用他（说专业点就是：name的dep里没有渲染Watcher），注意，这里说的是不会主动，但这并不代表他不会被动去更新。什么情况下他会被动去更新呢？那就是computed有依赖他的属性变量。
+</div>
+
+
+```
+// 例子代码，与本章代码无关
+
+<div>{{person}}</div>
+
+computed: {
+    person {
+        return `名称：${this.name}`
+        }
+    }
+
+```
+这里的person事依赖于name的，但是person是没有自己的dep的（因为他是computed属性变量），而name是有的。好了，继续看，请注意，此例子html里只有person的引用没有name的引用，所以name一改变，按理说虽然person跟着变了，但是html不会重新渲染，因为name虽然有dep，有更新视图的能力，但是奈何人家html不引用他啊！person想要自己去更新视图，但他却没这个能力啊，毕竟他没有dep这个管家！这个时候computed Watcher里收集的name的dep就派上用场了，可以借助这些dep去更新视图，达到更新html里的person的效果。具体会在下面computed里实现。
 
 
 ### Watcher的实现
