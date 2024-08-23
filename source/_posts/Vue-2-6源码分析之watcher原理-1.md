@@ -2,12 +2,9 @@
 title: Vue-2-6源码分析之watcher原理
 date: 2024-07-15 17:15:07
 tags:
-  - Vue
   - Vue源码
 cover: https://blog-1300014307.cos.ap-guangzhou.myqcloud.com/vue-01.jpg
 categories:
-  - Vue
-  - 总结
   - Vue源码
 ---
 

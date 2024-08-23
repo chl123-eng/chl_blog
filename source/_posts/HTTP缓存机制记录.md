@@ -6,7 +6,6 @@ tags:
 cover: https://blog-1300014307.cos.ap-guangzhou.myqcloud.com/http01.png
 categories:
   - http
-  - 总结
 ---
 
 http 缓存机制很容易就忘记了 这里大概记录一下
