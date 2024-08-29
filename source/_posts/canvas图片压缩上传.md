@@ -301,3 +301,186 @@ export default{
 </script>
 
 ```
+
+
+//封装兼容的图片上传文件
+```
+import {
+  OSSPolicy,
+  OSSUpload,
+  OSSPolicyAuthorized,
+  OSSPolicyAuthorizedGet
+} from '@/service/oss'
+import { WBIAOID } from '~/constant'
+const DIR = 'mall'
+export default {
+  data() {
+    return {
+      // 0 为普通照片上传，1为隐私照片上传
+      uploadType: 0,
+      isOpenCompress: false // 是否开启图片压缩
+    }
+  },
+  props: {
+    maxSize: {
+      type: Number,
+      default: 10
+    }
+  },
+  methods: {
+    // 上传之前
+    beforeUpload(file) {
+      if (file.size / 1024 / 1024 > this.maxSize) {
+        this.$toast('您选择的图片太大了，请重新请选择')
+        return false
+      }
+    },
+    // 获取OSS - token
+    async getOssToken() {
+      const OSSArray = [OSSPolicy, OSSPolicyAuthorized]
+      const data = await OSSArray[this.uploadType]({
+        $axios: this.$axios,
+        params: {
+          dir: this.uploadType ? '' : DIR
+        }
+      })
+      return data
+    },
+    async upload({ success, files, quality = 60 } = {}) {
+      // 1. 上传前检查
+      this.beforeUpload(files)
+      // 2. 获取token
+      const data = await this.getOssToken()
+      const results = []
+      // 3. 开始上传
+      if (files.length) {
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i]
+          let bolb = file
+          // 大于300KB才走压缩流程并且开启了压缩的字段
+          if (file.size / 1024 > 300 && this.isOpenCompress) {
+            const baseImg = await this.fileToBase64ByQuality(files[i], quality)
+            bolb = this.convertBase64UrlToBlob(baseImg, file.type)
+          }
+          const params = new FormData()
+          const aliyunFileKey =
+            data.dir +
+            new Date().getTime() +
+            (this.$cookies.get(WBIAOID) || '') +
+            file.name.replace(/[\u4e00-\u9fa5]/g, '')
+          const uploadObj = {
+            key: aliyunFileKey,
+            OSSAccessKeyId: data.accessid,
+            policy: data.policy,
+            signature: data.signature,
+            success_action_status: '200', // 让服务端返回200,不然，默认会返回204
+            file: bolb // 文件必须声明在最后，否则异常
+          }
+          for (const i in uploadObj) {
+            params.append(i, uploadObj[i])
+          }
+          try {
+            const url = await OSSUpload({
+              $axios: this.$axios,
+              url: data.host.replace(/http/gi, 'https'),
+              params
+            })
+            if (!url) {
+              results.push(aliyunFileKey)
+              success(results)
+            }
+          } catch (e) {
+            this.$toast('上传失败')
+          }
+        }
+      }
+    },
+    // 获取隐私图片方法
+    async getAuthorized(dir) {
+      const data = await OSSPolicyAuthorizedGet({
+        $axios: this.$axios,
+        params: {
+          dir
+        }
+      })
+      return data
+    },
+    //blob转换成base64:https://www.jb51.net/article/280974.htm
+    fileToBase64ByQuality(file, quality) {
+      const fileReader = new FileReader()
+      const type = file.type
+      return new Promise((resolve, reject) => {
+        if (window.URL || window.webkitURL) {
+          resolve(this.compress(URL.createObjectURL(file), quality, type))
+        } else {
+          fileReader.onload = () => {
+            resolve(this.compress(fileReader.result, quality, type))
+          }
+          fileReader.onerror = e => {
+            reject(e)
+          }
+          fileReader.readAsDataURL(file)
+        }
+      })
+    },
+    //  图片最大宽度
+
+    /**
+     * base64压缩（图片-canvas互转）
+     * @param {file} base64 base64图片数据
+     * @param {number} quality 图片质量
+     * @param {string} format 输出图片格式
+     * @return {base64} data 图片处理完成后的base64
+     */
+    compress(base64, quality, mimeType) {
+      const MAX_WIDTH = 800
+      const cvs = document.createElement('canvas')
+      const img = document.createElement('img')
+      img.crossOrigin = 'anonymous'
+      return new Promise((resolve, reject) => {
+        img.src = base64
+        // 图片偏移值
+        // let offetX = 0
+        img.onload = () => {
+          if (img.width > MAX_WIDTH) {
+            cvs.width = MAX_WIDTH
+            cvs.height = (img.height * MAX_WIDTH) / img.width
+            // offetX = (img.width - MAX_WIDTH) / 2
+          } else {
+            cvs.width = img.width
+            cvs.height = img.height
+          }
+          const ctx = cvs.getContext('2d')
+          if (img.width > img.height) {
+            ctx.translate(cvs.width / 2, cvs.height / 2) // 先位移坐标到中心点
+            // ctx.rotate((90 * Math.PI) / 180) // 旋转90度
+            // 此时按照旋转后的尺寸
+            // 把定位中心移动到左上角
+            ctx.translate(-cvs.width / 2, -cvs.height / 2)
+            // 绘制图片
+            ctx.drawImage(img, 0, 0, cvs.width, cvs.height)
+            // 坐标系还原到初始
+            ctx.setTransform(1, 0, 0, 1, 0, 0)
+          } else {
+            // 绘制图片
+            ctx.drawImage(img, 0, 0, cvs.width, cvs.height)
+          }
+          const imageData = cvs.toDataURL(mimeType, quality / 100)
+          resolve(imageData)
+        }
+      })
+    },
+    convertBase64UrlToBlob(base64, mimeType) {
+      const bytes = window.atob(base64.split(',')[1])
+      const ab = new ArrayBuffer(bytes.length)
+      const ia = new Uint8Array(ab)
+      for (let i = 0; i < bytes.length; i++) {
+        ia[i] = bytes.charCodeAt(i)
+      }
+      const _blob = new Blob([ia], { type: mimeType })
+      return _blob
+    }
+  }
+}
+
+```
